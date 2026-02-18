@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Intelligence Assistée</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@800&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg: #03040f;
+  --accent: #00f5d4;
+  --warn: #ff4d6d;
+  --text: #e8e8f0;
+  --muted: #3a3a55;
+}
+
+html { scroll-behavior: smooth; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Syne', sans-serif;
+  overflow-x: hidden;
+  width: 100%;
+}
+
+body::before {
+  content: '';
+  position: fixed; inset: 0; z-index: 0;
+  background-image:
+    linear-gradient(rgba(255,255,255,0.018) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.018) 1px, transparent 1px);
+  background-size: 64px 64px;
+  pointer-events: none;
+}
+
+/* NAV */
+nav {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 99;
+  padding: 1rem 5vw;
+  display: flex; justify-content: space-between; align-items: center;
+  background: rgba(3,4,15,0.88);
+  backdrop-filter: blur(16px);
+  border-bottom: 1px solid rgba(0,245,212,0.07);
+}
+nav span {
+  font-family: 'Space Mono', monospace;
+  font-size: 9px; letter-spacing: 4px; text-transform: uppercase;
+}
+nav .tag { color: var(--accent); }
+nav .mod { color: var(--muted); }
+
+/* SECTIONS */
+.bloc {
+  position: relative; z-index: 1;
+  min-height: 100svh;
+  display: flex; flex-direction: column;
+  justify-content: center;
+  padding: clamp(6rem,12vh,9rem) 6vw clamp(3rem,6vh,5rem);
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+  overflow: hidden;
+  width: 100%;
+}
+
+.label {
+  font-family: 'Space Mono', monospace;
+  font-size: 9px; letter-spacing: 5px;
+  color: var(--accent); text-transform: uppercase;
+  margin-bottom: 2rem;
+}
+
+/* TEXTE GÉANT — clampé pour ne jamais déborder */
+.giant {
+  font-weight: 800;
+  line-height: 0.88;
+  /* 8.5vw = environ 6 chars sur 100vw = safe pour "ASSISTÉE" */
+  font-size: clamp(2.5rem, 8.5vw, 7.5rem);
+  overflow: hidden;
+}
+.giant span {
+  display: block;
+  overflow: hidden;
+  white-space: nowrap;
+}
+.giant .outline {
+  color: transparent;
+  -webkit-text-stroke: 1.5px var(--accent);
+}
+.giant .solid  { color: var(--text); }
+.giant .acc    { color: var(--accent); }
+.giant .w      { color: var(--warn); }
+
+/* hero bg word — clippé */
+.hero-bg-word {
+  position: absolute; top: 50%; left: 50%;
+  transform: translate(-50%,-50%);
+  font-weight: 800;
+  font-size: clamp(6rem, 18vw, 16rem);
+  color: transparent;
+  -webkit-text-stroke: 1px rgba(0,245,212,0.04);
+  white-space: nowrap;
+  pointer-events: none; user-select: none;
+  animation: float 9s ease-in-out infinite;
+  overflow: hidden;
+  max-width: 100%;
+}
+
+.hero-pill {
+  margin-top: 2.5rem;
+  display: inline-block;
+  font-family: 'Space Mono', monospace;
+  font-size: clamp(0.55rem, 0.9vw, 0.72rem);
+  color: var(--muted);
+  border: 1px solid rgba(0,245,212,0.1);
+  padding: 0.6rem 1.2rem;
+  max-width: 100%;
+}
+.hero-pill strong { color: var(--accent); }
+
+/* ghost */
+.ghost {
+  position: absolute;
+  right: 3vw; bottom: -3vh;
+  font-weight: 800;
+  font-size: clamp(8rem, 28vw, 24rem);
+  color: transparent;
+  -webkit-text-stroke: 1px rgba(255,255,255,0.025);
+  line-height: 1; pointer-events: none; user-select: none;
+  overflow: hidden;
+}
+
+/* ÉTAPES */
+.steps-bloc {
+  position: relative; z-index: 1;
+  padding: clamp(4rem,8vh,7rem) 6vw;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+}
+
+.steps-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1px;
+  margin-top: 2.5rem;
+}
+
+.step {
+  border: 1px solid rgba(255,255,255,0.06);
+  padding: 2rem 1.2rem 1.8rem;
+  transition: border-color 0.3s;
+  overflow: hidden;
+}
+.step:hover { border-color: rgba(0,245,212,0.25); }
+
+.step-n {
+  font-size: clamp(2.5rem, 5vw, 4.5rem);
+  font-weight: 800; line-height: 1;
+  color: transparent;
+  -webkit-text-stroke: 1px rgba(0,245,212,0.12);
+  margin-bottom: 0.8rem;
+}
+
+.step h3 {
+  font-size: clamp(0.9rem, 1.4vw, 1.2rem);
+  font-weight: 800; line-height: 1.15;
+}
+
+.step-tag {
+  margin-top: 1rem;
+  display: inline-block;
+  font-family: 'Space Mono', monospace;
+  font-size: 8px; letter-spacing: 2px;
+  text-transform: uppercase; padding: 0.2rem 0.5rem;
+}
+.step-tag.a { color: var(--accent); border: 1px solid rgba(0,245,212,0.25); }
+.step-tag.w { color: var(--warn);   border: 1px solid rgba(255,77,109,0.25); }
+
+/* BILAN */
+.bilan-bloc {
+  position: relative; z-index: 1;
+  padding: clamp(4rem,8vh,7rem) 6vw;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+}
+
+.bilan-cols {
+  display: grid; grid-template-columns: 1fr 1fr;
+  gap: 1px; margin-top: 2.5rem;
+}
+
+.bilan-col {
+  padding: 2.5rem 2rem;
+  border: 1px solid rgba(255,255,255,0.05);
+}
+.bilan-col.plus  { border-top: 2px solid var(--accent); }
+.bilan-col.moins { border-top: 2px solid var(--warn); }
+
+.bilan-head {
+  font-family: 'Space Mono', monospace;
+  font-size: 9px; letter-spacing: 4px; text-transform: uppercase;
+  margin-bottom: 1.8rem;
+}
+.plus .bilan-head  { color: var(--accent); }
+.moins .bilan-head { color: var(--warn); }
+
+.bilan-item {
+  font-size: clamp(1rem, 1.6vw, 1.4rem);
+  font-weight: 800; line-height: 1.1;
+  padding: 1rem 0;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+  display: flex; align-items: center; gap: 0.7rem;
+}
+.bilan-item:last-child { border-bottom: none; }
+.bilan-item .ico { font-size: 1.2rem; flex-shrink: 0; }
+
+/* BIAIS */
+.biais-bloc {
+  position: relative; z-index: 1;
+  padding: clamp(4rem,8vh,7rem) 6vw;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+  background: rgba(255,77,109,0.02);
+}
+
+.biais-grid {
+  display: grid; grid-template-columns: repeat(3,1fr);
+  gap: 1px; margin-top: 2.5rem;
+}
+
+.biais-card {
+  border: 1px solid rgba(255,77,109,0.1);
+  padding: 2.5rem 1.5rem;
+  transition: background 0.3s;
+  overflow: hidden;
+}
+.biais-card:hover { background: rgba(255,77,109,0.06); }
+
+.biais-emoji { font-size: 2.5rem; display: block; margin-bottom: 0.8rem; }
+
+.biais-card h4 {
+  font-size: clamp(1rem, 2vw, 1.6rem);
+  font-weight: 800; color: var(--warn);
+  margin-bottom: 0.4rem;
+}
+
+.biais-card p {
+  font-family: 'Space Mono', monospace;
+  font-size: 0.68rem; color: var(--muted); line-height: 1.7;
+}
+
+/* CONCLUSION */
+.conclusion-bloc {
+  position: relative; z-index: 1;
+  min-height: 100svh;
+  display: flex; flex-direction: column;
+  justify-content: center; align-items: center;
+  text-align: center;
+  padding: clamp(5rem,10vh,8rem) 8vw;
+  overflow: hidden;
+}
+
+.conclusion-title {
+  font-weight: 800;
+  /* plus petit pour que les lignes ne débordent pas */
+  font-size: clamp(2rem, 6.5vw, 6.5rem);
+  line-height: 0.92;
+}
+.conclusion-title .acc { color: var(--accent); }
+.conclusion-title .w   { color: var(--warn); }
+
+.conclusion-meta {
+  margin-top: 4rem;
+  font-family: 'Space Mono', monospace;
+  font-size: 9px; letter-spacing: 4px;
+  color: var(--muted); text-transform: uppercase;
+}
+
+/* FOOTER */
+footer {
+  position: relative; z-index: 1;
+  padding: 1.2rem 5vw;
+  border-top: 1px solid rgba(255,255,255,0.04);
+  display: flex; justify-content: space-between; flex-wrap: wrap; gap: 0.5rem;
+}
+footer span {
+  font-family: 'Space Mono', monospace;
+  font-size: 9px; letter-spacing: 2px; color: var(--muted);
+}
+
+/* REVEAL */
+.r { opacity: 0; transform: translateY(20px); transition: opacity 0.7s ease, transform 0.7s ease; }
+.r.v { opacity: 1; transform: none; }
+.d1 { transition-delay: 0.1s; }
+.d2 { transition-delay: 0.2s; }
+.d3 { transition-delay: 0.3s; }
+
+@keyframes float {
+  0%,100% { transform: translate(-50%,-50%); }
+  50%      { transform: translate(-50%,calc(-50% - 14px)); }
+}
+
+/* RESPONSIVE */
+@media (max-width: 860px) {
+  .steps-grid { grid-template-columns: 1fr 1fr; }
+  .biais-grid { grid-template-columns: 1fr 1fr; }
+}
+@media (max-width: 560px) {
+  .steps-grid { grid-template-columns: 1fr; }
+  .bilan-cols { grid-template-columns: 1fr; }
+  .biais-grid { grid-template-columns: 1fr; }
+  nav .mod { display: none; }
+}
+
+@keyframes scanline {
+  0%   { top: -2px; }
+  100% { top: 100%; }
+}
+@keyframes bounce {
+  0%,100% { transform: translateY(0); }
+  40%      { transform: translateY(-8px); }
+  70%      { transform: translateY(-3px); }
+}
+@keyframes glitch1 {
+  0%,100% { clip-path: inset(0 0 100% 0); transform: none; }
+  20%      { clip-path: inset(15% 0 60% 0); transform: translateX(-5px); }
+  50%      { clip-path: inset(55% 0 20% 0); transform: translateX(5px); }
+  80%      { clip-path: inset(30% 0 45% 0); transform: translateX(-3px); }
+}
+@keyframes glitch2 {
+  0%,100% { clip-path: inset(0 0 100% 0); transform: none; }
+  30%      { clip-path: inset(60% 0 10% 0); transform: translateX(5px); }
+  60%      { clip-path: inset(20% 0 65% 0); transform: translateX(-4px); }
+}
+
+/* CURSOR */
+.cur {
+  position: fixed; width: 8px; height: 8px;
+  background: var(--accent); border-radius: 50%;
+  pointer-events: none; z-index: 999;
+  transform: translate(-50%,-50%);
+  transition: width 0.25s ease, height 0.25s ease, background 0.25s ease, opacity 0.2s;
+  mix-blend-mode: screen;
+}
+.cur-ring {
+  position: fixed; width: 28px; height: 28px;
+  border: 1px solid rgba(0,245,212,0.35); border-radius: 50%;
+  pointer-events: none; z-index: 998;
+  transform: translate(-50%,-50%);
+}
+.cur.big { width: 44px; height: 44px; background: rgba(0,245,212,0.1); }
+
+/* STEP hover */
+.step {
+  transition: border-color 0.3s, transform 0.3s, background 0.3s !important;
+  cursor: default;
+}
+.step:hover {
+  border-color: rgba(0,245,212,0.35) !important;
+  transform: translateY(-5px);
+  background: rgba(0,245,212,0.03);
+}
+.step:hover .step-n {
+  -webkit-text-stroke-color: rgba(0,245,212,0.5);
+  transition: -webkit-text-stroke-color 0.3s;
+}
+.step:hover .step-tag.a { background: rgba(0,245,212,0.08); }
+.step:hover .step-tag.w { background: rgba(255,77,109,0.08); }
+
+/* BIAIS hover */
+.biais-card {
+  transition: background 0.3s, transform 0.3s, border-color 0.3s !important;
+  cursor: default;
+  overflow: hidden;
+  position: relative;
+}
+.biais-card::after {
+  content: '';
+  position: absolute; left: 0; right: 0; height: 1px;
+  background: linear-gradient(90deg, transparent, var(--warn), transparent);
+  top: -1px;
+  animation: scanline 2.5s linear infinite;
+  opacity: 0; transition: opacity 0.3s;
+}
+.biais-card:hover { transform: translateY(-5px); border-color: rgba(255,77,109,0.45) !important; }
+.biais-card:hover::after { opacity: 1; }
+.biais-card:hover .biais-emoji { display: inline-block; animation: bounce 0.5s ease; }
+
+/* BILAN item hover */
+.bilan-item {
+  transition: padding-left 0.25s, color 0.25s !important;
+  cursor: default;
+}
+.bilan-item:hover { padding-left: 0.7rem; }
+.plus  .bilan-item:hover { color: var(--accent); }
+.moins .bilan-item:hover { color: var(--warn); }
+
+/* HERO PILL */
+.hero-pill { transition: border-color 0.3s, color 0.3s; cursor: default; }
+.hero-pill:hover { border-color: rgba(0,245,212,0.5); color: var(--text); }
+
+/* Giant glitch on hero hover */
+.giant .outline { position: relative; }
+.giant .outline::before,
+.giant .outline::after {
+  content: 'INTERNET';
+  position: absolute; top: 0; left: 0; width: 100%;
+  clip-path: inset(0 0 100% 0);
+}
+.giant .outline::before { color: var(--warn); -webkit-text-stroke: 0; }
+.giant .outline::after  { color: #7b2fff; -webkit-text-stroke: 0; }
+.bloc:hover .giant .outline::before { animation: glitch1 0.5s steps(1) forwards; }
+.bloc:hover .giant .outline::after  { animation: glitch2 0.5s steps(1) 0.04s forwards; }
+
+</style>
+</head>
+<body>
+
+<nav>
+  <span class="tag">// Hackathon des Intelligences</span>
+  <span class="mod">Module 02 — Assistée</span>
+</nav>
+
+<!-- HERO -->
+<div class="bloc">
+  <div class="hero-bg-word">WEB</div>
+  <p class="label">// 02 — intelligence assistée</p>
+  <div class="giant">
+    <span class="outline">INTERNET</span>
+    <span class="solid">ASSISTÉE</span>
+  </div>
+  <div class="hero-pill">Brief : <strong>TúYo — Orange España</strong> · Réinventer le go-to-market</div>
+</div>
+
+<!-- ÉTAPES -->
+<div class="steps-bloc">
+  <p class="label r">// comment on a travaillé</p>
+  <div class="steps-grid">
+    <div class="step r">
+      <div class="step-n">01</div>
+      <h3>On ouvre les onglets</h3>
+      <span class="step-tag a">liberté</span>
+    </div>
+    <div class="step r d1">
+      <div class="step-n">02</div>
+      <h3>On se perd dans la masse</h3>
+      <span class="step-tag w">frustration</span>
+    </div>
+    <div class="step r d2">
+      <div class="step-n">03</div>
+      <h3>Une idée émerge</h3>
+      <span class="step-tag a">convergence</span>
+    </div>
+    <div class="step r d3">
+      <div class="step-n">04</div>
+      <h3>On se répartit les tâches</h3>
+      <span class="step-tag w">solo</span>
+    </div>
+  </div>
+</div>
+
+<!-- RESSENTI -->
+<div class="bloc">
+  <p class="label r">// ressenti</p>
+  <div class="giant r">
+    <span class="w">TROP</span>
+    <span class="solid">D'INFOS.</span>
+    <span class="acc">PAS ASSEZ</span>
+    <span class="solid">D'IDÉE.</span>
+  </div>
+  <div class="ghost">?</div>
+</div>
+
+<!-- BILAN -->
+<div class="bilan-bloc">
+  <p class="label r">// bilan</p>
+  <div class="bilan-cols">
+    <div class="bilan-col plus r">
+      <p class="bilan-head">[ + ] ça apporte</p>
+      <div class="bilan-item"><span class="ico">📊</span> Accès à la data</div>
+      <div class="bilan-item"><span class="ico">🔍</span> Liberté d'exploration</div>
+      <div class="bilan-item"><span class="ico">✅</span> Idées sourcées</div>
+    </div>
+    <div class="bilan-col moins r d1">
+      <p class="bilan-head">[ − ] ça coûte</p>
+      <div class="bilan-item"><span class="ico">⏳</span> Perte de temps</div>
+      <div class="bilan-item"><span class="ico">💔</span> Groupe fragmenté</div>
+      <div class="bilan-item"><span class="ico">😤</span> Paralysie</div>
+    </div>
+  </div>
+</div>
+
+<!-- BIAIS -->
+<div class="biais-bloc">
+  <p class="label r">// biais invisibles</p>
+  <div class="biais-grid">
+    <div class="biais-card r">
+      <span class="biais-emoji">🪞</span>
+      <h4>Confirmation</h4>
+      <p>On trouve ce qu'on cherche déjà.</p>
+    </div>
+    <div class="biais-card r d1">
+      <span class="biais-emoji">🫧</span>
+      <h4>Bulle filtrante</h4>
+      <p>Les algos définissent le cadre.</p>
+    </div>
+    <div class="biais-card r d2">
+      <span class="biais-emoji">🌫️</span>
+      <h4>Illusion de savoir</h4>
+      <p>Trouver ≠ comprendre.</p>
+    </div>
+  </div>
+</div>
+
+<!-- CONCLUSION -->
+<div class="conclusion-bloc">
+  <div class="conclusion-title r">
+    INTERNET<br>
+    <span class="acc">INFORME</span><br>
+    ET INSPIRE.<br>
+    MAIS IL NE<br>
+    <span class="w">TROUVE PAS</span><br>
+    L'IDÉE.
+  </div>
+  <p class="conclusion-meta r">DMB × EFAP · Hackathon des Intelligences · Fév. 2026</p>
+</div>
+
+<footer>
+  <span>Module 02 — Intelligence Assistée</span>
+  <span>← Naturelle · Augmentée →</span>
+</footer>
+
+<script>
+  const obs = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      if (e.isIntersecting) { e.target.classList.add('v'); obs.unobserve(e.target); }
+    });
+  }, { threshold: 0.1 });
+  document.querySelectorAll('.r').forEach(el => obs.observe(el));
+</script>
+
+<div class="cur" id="cur"></div>
+<div class="cur-ring" id="ring"></div>
+<script>
+  const cur = document.getElementById('cur');
+  const ring = document.getElementById('ring');
+  let rx = 0, ry = 0, mx = 0, my = 0;
+
+  document.addEventListener('mousemove', e => {
+    mx = e.clientX; my = e.clientY;
+    cur.style.left = mx + 'px';
+    cur.style.top  = my + 'px';
+  });
+
+  // Smooth ring follow
+  (function loop() {
+    rx += (mx - rx) * 0.14;
+    ry += (my - ry) * 0.14;
+    ring.style.left = rx + 'px';
+    ring.style.top  = ry + 'px';
+    requestAnimationFrame(loop);
+  })();
+
+  // Big cursor on interactive elements
+  document.querySelectorAll('.step, .biais-card, .bilan-item').forEach(el => {
+    el.addEventListener('mouseenter', () => cur.classList.add('big'));
+    el.addEventListener('mouseleave', () => cur.classList.remove('big'));
+  });
+
+  // Parallax hero bg word on mouse move
+  const bgWord = document.querySelector('.hero-bg-word');
+  if (bgWord) {
+    document.addEventListener('mousemove', e => {
+      const x = (e.clientX / window.innerWidth  - 0.5) * 20;
+      const y = (e.clientY / window.innerHeight - 0.5) * 10;
+      bgWord.style.transform = `translate(calc(-50% + ${x}px), calc(-50% + ${y}px))`;
+    });
+  }
+</script>
+
+</body>
+</html>
